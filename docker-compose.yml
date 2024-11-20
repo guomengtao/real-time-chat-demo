@@ -1,0 +1,59 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - PYTHONDONTWRITEBYTECODE=1
+      - WERKZEUG_DEBUG_PIN=off
+    command: python3 -u app.py
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+    networks:
+      - chat-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - chat-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  chat-network:
+    driver: bridge

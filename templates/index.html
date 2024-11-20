@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat App</title>
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        .message .user {
+            font-weight: bold;
+        }
+        .message .timestamp {
+            color: #666;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+        <input type="text" id="username" placeholder="Your name" />
+        <input type="text" id="message" placeholder="Type your message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('load_messages', (messages) => {
+            const messagesDiv = document.getElementById('messages');
+            messages.reverse().forEach(message => {
+                appendMessage(message);
+            });
+        });
+
+        socket.on('new_message', (message) => {
+            appendMessage(message);
+        });
+
+        function appendMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <span class="user">${message.user}:</span>
+                <span class="text">${message.message}</span>
+                <span class="timestamp">${message.timestamp}</span>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendMessage() {
+            const username = document.getElementById('username').value;
+            const message = document.getElementById('message').value;
+            
+            if (!username || !message) {
+                alert('Please enter both username and message');
+                return;
+            }
+
+            socket.emit('new_message', {
+                user: username,
+                message: message
+            });
+
+            document.getElementById('message').value = '';
+        }
+    </script>
+</body>
+</html> 
